@@ -5,13 +5,64 @@ from sloth.annotations.model import AnnotationModelItem
 from sloth.utils import toQImage
 from sloth.conf import config
 import logging
+from PyQt4.QtGui import QGraphicsLineItem
+from PyQt4.Qt import QLineF, QPen
 LOG = logging.getLogger(__name__)
 
-
+class Rulers:
+    """ Insert Rulers into the scene, this is essential when drawing rectangles
+    and one wants to see whether the annotated borders accurately include the
+    entire object before clicking to create that corner."""
+    def __init__(self, scene):
+        self._scene = scene
+        self._scene.mousePositionChanged.connect(self.onMousePositionChanged)
+        self._horizontal_ruler = None
+        self._vertical_ruler = None
+        self._pen = QPen(Qt.white, 1, Qt.DotLine)
+        self.show_rulers=True
+        
+    def removeRulers(self):
+        if self._vertical_ruler is not None:
+            self._scene.removeItem(self._vertical_ruler)
+            self._scene.removeItem(self._horizontal_ruler)
+            self._vertical_ruler = None
+            self._horizontal_ruler = None
+        
+    def createRulers(self):
+        if self._vertical_ruler is None:
+            self._horizontal_ruler = QGraphicsLineItem(QLineF(0, 0, 0, 0))
+            self._vertical_ruler   = QGraphicsLineItem(QLineF(0, 0, 0, 0))
+            self._horizontal_ruler.setPen(self._pen)
+            self._vertical_ruler.setPen(self._pen)
+            self._scene.addItem(self._vertical_ruler)
+            self._scene.addItem(self._horizontal_ruler)
+        
+    def onMousePositionChanged(self, x, y):
+        if not self.show_rulers:
+            return
+        if self._scene._image is not None:
+            rows = self._scene._image.shape[0]
+            cols = self._scene._image.shape[1]
+            if x > 0 and y > 0 and y < rows and x < cols:
+                self.createRulers()
+                self._horizontal_ruler.setLine(QLineF(0, y, cols, y))
+                self._vertical_ruler.setLine(QLineF(x, 0, x, rows))
+            else:
+                self.removeRulers()
+        else:
+            self.removeRulers()
+            
+    def setShowRulers(self, value):
+        self.show_rulers=value
+        if not self.show_rulers:
+            self.removeRulers()
+    
 class AnnotationScene(QGraphicsScene):
     mousePositionChanged = pyqtSignal(float, float)
     def __init__(self, labeltool, items=None, inserters=None, parent=None):
         super(AnnotationScene, self).__init__(parent)
+        
+        self._rulers = Rulers(self)
 
         self._model = None
         self._image_item = None
@@ -403,4 +454,7 @@ class AnnotationScene(QGraphicsScene):
             painter.setPen(QPen(QColor('black'), 1))
 
             self._message_text_item.paint(painter, QStyleOptionGraphicsItem(), None)
-
+            
+    def setShowRulers(self, value):
+        self._rulers.setShowRulers(value)
+            

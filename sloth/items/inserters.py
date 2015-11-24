@@ -2,7 +2,6 @@ import math
 from PyQt4.QtGui import *
 from PyQt4.Qt import *
 
-
 class ItemInserter(QObject):
     """
     The base class for all item insertion handlers.

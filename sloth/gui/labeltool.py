@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
 
         img = self.labeltool.getImage(new_image)
 
-        if img == None:
+        if img is None:
             self.controls.setFilename("")
             self.selectionmodel.setCurrentIndex(new_image.index(), QItemSelectionModel.ClearAndSelect|QItemSelectionModel.Rows)
             return
@@ -273,6 +273,7 @@ class MainWindow(QMainWindow):
 
         ## View menu
         self.ui.actionLocked.toggled.connect(self.onViewsLockedChanged)
+        self.ui.actionShowRulers.toggled.connect(self.onViewsShowRulersChanged)
 
         ## Help menu
         self.ui.action_About.triggered.connect(self.about)
@@ -299,14 +300,17 @@ class MainWindow(QMainWindow):
         pos    = settings.value("MainWindow/Position", QPoint(10, 10))
         state  = settings.value("MainWindow/State")
         locked = settings.value("MainWindow/ViewsLocked", False)
+        show_rulers = settings.value("MainWindow/ShowRulers", True)
         if isinstance(size,   QVariant): size  = size.toSize()
         if isinstance(pos,    QVariant): pos   = pos.toPoint()
         if isinstance(state,  QVariant): state = state.toByteArray()
         if isinstance(locked, QVariant): locked = locked.toBool()
+        if isinstance(show_rulers, QVariant): show_rulers = show_rulers.toBool()
         self.resize(size)
         self.move(pos)
         self.restoreState(state)
         self.ui.actionLocked.setChecked(bool(locked))
+        self.ui.actionShowRulers.setChecked(bool(show_rulers))
 
     def saveApplicationSettings(self):
         settings = QSettings()
@@ -314,6 +318,7 @@ class MainWindow(QMainWindow):
         settings.setValue("MainWindow/Position",    self.pos())
         settings.setValue("MainWindow/State",       self.saveState())
         settings.setValue("MainWindow/ViewsLocked", self.ui.actionLocked.isChecked())
+        settings.setValue("MainWindow/ShowRulers",  self.ui.actionShowRulers.isChecked())
         if self.labeltool.getCurrentFilename() is not None:
             filename = self.labeltool.getCurrentFilename()
         else:
@@ -401,6 +406,8 @@ class MainWindow(QMainWindow):
         self.ui.dockProperties.setFeatures(features)
         self.ui.dockAnnotations.setFeatures(features)
 
+    def onViewsShowRulersChanged(self, checked):
+        self.scene.setShowRulers(checked)
 
     ###
     ### global event handling
